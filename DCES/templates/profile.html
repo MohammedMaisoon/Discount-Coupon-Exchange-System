@@ -1,0 +1,304 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ user.username }}'s Profile - CouponExchange.AI{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-header">
+        <div class="profile-avatar">
+            <img src="{{ user.avatar or url_for('static', filename='images/default-avatar.png') }}" alt="{{ user.username }}">
+        </div>
+        
+        <div class="profile-info">
+            <h1 class="username glow">{{ user.username }}</h1>
+            
+            <div class="user-stats">
+                <div class="stat-badge">
+                    <i class="fas fa-ticket-alt"></i>
+                    <span>{{ user_stats.coupons_count }} Coupons</span>
+                </div>
+                
+                <div class="stat-badge">
+                    <i class="fas fa-thumbs-up"></i>
+                    <span>{{ user_stats.likes_received }} Likes</span>
+                </div>
+                
+                <div class="stat-badge">
+                    <i class="fas fa-star"></i>
+                    <span>{{ user_stats.average_rating|default('0.0') }} Rating</span>
+                </div>
+                
+                <div class="stat-badge">
+                    <i class="fas fa-trophy"></i>
+                    <span>{{ user.rank_title }}</span>
+                </div>
+            </div>
+            
+            <div class="user-bio">
+                {% if user.bio %}
+                    <p>{{ user.bio }}</p>
+                {% else %}
+                    <p>No bio provided.</p>
+                {% endif %}
+            </div>
+            
+            <div class="user-meta">
+                <div class="meta-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Member since {{ user.created_at.strftime('%B %Y') }}</span>
+                </div>
+                
+                {% if user.location %}
+                    <div class="meta-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>{{ user.location }}</span>
+                    </div>
+                {% endif %}
+            </div>
+            
+            {% if session['user_id'] and session['user_id'] != user.id %}
+                <div class="profile-actions">
+                    <button class="btn {% if is_following %}following{% endif %}" id="followBtn" data-id="{{ user.id }}">
+                        {% if is_following %}
+                            <i class="fas fa-user-check"></i> Following
+                        {% else %}
+                            <i class="fas fa-user-plus"></i> Follow
+                        {% endif %}
+                    </button>
+                </div>
+            {% elif current_user.is_authenticated and current_user.id == user.id %}
+                <div class="profile-actions">
+                    <a href="{{ url_for('edit_profile') }}" class="btn">
+                        <i class="fas fa-edit"></i> Edit Profile
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="profile-tabs">
+        <button class="tab-btn active" data-tab="coupons">Coupons</button>
+        <button class="tab-btn" data-tab="reviews">Reviews</button>
+        <button class="tab-btn" data-tab="badges">Badges & Achievements</button>
+    </div>
+    
+    <div class="profile-content">
+        <!-- Coupons Tab -->
+        <div class="tab-content active" id="couponsTab">
+            <div class="tab-header">
+                <h2>Shared Coupons</h2>
+                <div class="tab-filters">
+                    <select id="couponSortFilter">
+                        <option value="newest">Newest First</option>
+                        <option value="popular">Most Popular</option>
+                        <option value="highest">Highest Discount</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="grid-container">
+                {% if user_coupons %}
+                    {% for coupon in user_coupons %}
+                    <div class="card coupon-card" data-date="{{ coupon.created_at }}" data-popular="{{ coupon.likes }}" data-discount="{{ coupon.discount_value }}">
+                        <div class="discount-badge">{{ coupon.discount_value }}</div>
+                        <div class="store-name">{{ coupon.store }}</div>
+                        <h3 class="coupon-title">{{ coupon.title }}</h3>
+                        <p class="coupon-description">{{ coupon.description }}</p>
+                        <div class="coupon-code" onclick="copyCode(this)">
+                            {{ coupon.code }}
+                            <span><i class="fas fa-copy"></i></span>
+                        </div>
+                        <div class="expiry-date" data-date="{{ coupon.expiry_date }}">
+                            Expires: {{ coupon.expiry_date.strftime('%d %b %Y') }}
+                        </div>
+                        <div class="coupon-stats">
+                            <span><i class="fas fa-eye"></i> {{ coupon.views }}</span>
+                            <span><i class="fas fa-copy"></i> {{ coupon.copies }}</span>
+                            <span><i class="fas fa-thumbs-up"></i> {{ coupon.likes }}</span>
+                        </div>
+                        <div class="card-footer">
+                            <a href="{{ url_for('coupon_detail', coupon_id=coupon.id) }}" class="btn">View Details</a>
+                            {% if current_user.is_authenticated %}
+                                <button class="btn-icon save-coupon {% if coupon.id in saved_coupons %}saved{% endif %}" data-id="{{ coupon.id }}">
+                                    <i class="{% if coupon.id in saved_coupons %}fas{% else %}far{% endif %} fa-bookmark"></i>
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-ticket-alt"></i>
+                        <p>{{ user.username }} hasn't shared any coupons yet</p>
+                    </div>
+                {% endif %}
+            </div>
+            
+            {% if coupon_pages is defined and coupon_pages > 1 %}
+                <div class="pagination">
+                    {% for p in range(1, coupon_pages + 1) %}
+                        <a href="?coupon_page={{ p }}" class="page-btn {% if coupon_page == p %}active{% endif %}">{{ p }}</a>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Reviews Tab -->
+        <div class="tab-content" id="reviewsTab">
+            <div class="tab-header">
+                <h2>User Reviews</h2>
+            </div>
+            
+            {% if user_reviews %}
+                <div class="reviews-list">
+                    {% for review in user_reviews %}
+                        <div class="review-item with-coupon">
+                            <div class="review-header">
+                                <div class="review-coupon">
+                                    <a href="{{ url_for('coupon_detail', coupon_id=review.coupon.id) }}">{{ review.coupon.title }}</a>
+                                    <span class="store-label">{{ review.coupon.store }}</span>
+                                </div>
+                                <div class="review-rating">
+                                    {% for i in range(5) %}
+                                        <i class="{% if i < review.rating %}fas{% else %}far{% endif %} fa-star"></i>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="review-content">
+                                <p>{{ review.comment }}</p>
+                            </div>
+                            <div class="review-date">
+                                {{ review.created_at.strftime('%d %b %Y') }}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-comment"></i>
+                    <p>{{ user.username }} hasn't written any reviews yet</p>
+                </div>
+            {% endif %}
+            
+            {% if review_pages is defined and review_pages > 1 %}
+                <div class="pagination">
+                    {% for p in range(1, review_pages + 1) %}
+                        <a href="?review_page={{ p }}" class="page-btn {% if review_page == p %}active{% endif %}">{{ p }}</a>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Badges Tab -->
+        <div class="tab-content" id="badgesTab">
+            <div class="tab-header">
+                <h2>Badges & Achievements</h2>
+            </div>
+            
+            {% if user_badges %}
+                <div class="badges-grid">
+                    {% for badge in user_badges %}
+                        <div class="badge-item">
+                            <div class="badge-icon {{ badge.type }}">
+                                <i class="{{ badge.icon }}"></i>
+                            </div>
+                            <div class="badge-info">
+                                <h3>{{ badge.title }}</h3>
+                                <p>{{ badge.description }}</p>
+                                <span class="badge-date">Earned {{ badge.earned_at.strftime('%d %b %Y') }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-award"></i>
+                    <p>{{ user.username }} hasn't earned any badges yet</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tab switching
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                
+                // Remove active class from all buttons and contents
+                tabBtns.forEach(btn => btn.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // Add active class to clicked button and corresponding content
+                this.classList.add('active');
+                document.getElementById(tabId + 'Tab').classList.add('active');
+            });
+        });
+        
+        // Follow/Unfollow functionality
+        const followBtn = document.getElementById('followBtn');
+        if (followBtn) {
+            followBtn.addEventListener('click', function() {
+                const userId = this.getAttribute('data-id');
+                const isFollowing = this.classList.contains('following');
+                
+                fetch('/api/follow', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        action: isFollowing ? 'unfollow' : 'follow'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        if (isFollowing) {
+                            followBtn.classList.remove('following');
+                            followBtn.innerHTML = '<i class="fas fa-user-plus"></i> Follow';
+                        } else {
+                            followBtn.classList.add('following');
+                            followBtn.innerHTML = '<i class="fas fa-user-check"></i> Following';
+                        }
+                    }
+                });
+            });
+        }
+        
+        // Coupon sorting functionality
+        const sortSelect = document.getElementById('couponSortFilter');
+        if (sortSelect) {
+            sortSelect.addEventListener('change', function() {
+                const sortValue = this.value;
+                const couponCards = document.querySelectorAll('.coupon-card');
+                const cardsArray = Array.from(couponCards);
+                
+                cardsArray.sort((a, b) => {
+                    if (sortValue === 'newest') {
+                        return new Date(b.dataset.date) - new Date(a.dataset.date);
+                    } else if (sortValue === 'popular') {
+                        return parseInt(b.dataset.popular) - parseInt(a.dataset.popular);
+                    } else if (sortValue === 'highest') {
+                        // Extract just the number from discount value (remove % or other symbols)
+                        const aDiscount = parseFloat(a.dataset.discount.replace(/[^0-9.]/g, ''));
+                        const bDiscount = parseFloat(b.dataset.discount.replace(/[^0-9.]/g, ''));
+                        return bDiscount - aDiscount;
+                    }
+                });
+                
+                const container = document.querySelector('.grid-container');
+                cardsArray.forEach(card => {
+                    container.appendChild(card);
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

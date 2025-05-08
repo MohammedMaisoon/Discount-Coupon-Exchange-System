@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}Discount Coupon Exchange - Share and Discover Coupons{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div class="hero-content">
+        <h1 class="glow">Coupon Exchange System</h1>
+        <p>Discover, share, and exchange discount coupons with our futuristic coupon exchange platform. Join our community and save together!</p>
+        <a href="{{ url_for('register') }}" class="btn pulse">Join Now</a>
+    </div>
+</div>
+
+<!-- Search -->
+<div class="search-section">
+    <h2>Find the perfect coupon</h2>
+    <form action="{{ url_for('coupons') }}" method="get" class="search-bar">
+        <input type="text" name="query" id="searchInput" placeholder="Search coupons..." required>
+        <select name="category" id="categoryFilter">
+            <option value="">All Categories</option>
+            {% for category in categories %}
+            <option value="{{ category.id }}">{{ category.name }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit"><i class="fas fa-search"></i> Search</button>
+    </form>
+</div>
+
+<!-- Featured Coupons -->
+<section class="featured-section">
+    <div class="section-title">
+        <h2>Featured Coupons</h2>
+    </div>
+    
+    <div class="grid-container">
+        {% for coupon in coupons %}
+        <div class="card featured-coupon" data-category="{{ coupon.category_id }}" data-date="{{ coupon.created_at }}" data-expiry="{{ coupon.expiry_date }}" data-discount="{{ coupon.discount_value }}">
+            <div class="discount-badge">{{ coupon.discount_value }}</div>
+            <div class="store-name">{{ coupon.store }}</div>
+            <h3 class="coupon-title">{{ coupon.title }}</h3>
+            <p class="coupon-description">{{ coupon.description }}</p>
+            <div class="coupon-code" onclick="copyCode(this)">
+                {{ coupon.code }}
+                <span><i class="fas fa-copy"></i></span>
+            </div>
+            <div class="expiry-date" data-date="{{ coupon.expiry_date }}">
+                Expires: {{ coupon.expiry_date.strftime('%d %b %Y') }}
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('coupon_detail', coupon_id=coupon.id) }}" class="btn">View Details</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="text-center">
+        <a href="{{ url_for('coupons') }}" class="btn">View All Coupons</a>
+    </div>
+</section>
+
+<!-- Categories -->
+<section class="categories-section">
+    <div class="section-title">
+        <h2>Browse By Category</h2>
+    </div>
+    
+    <div class="grid-container">
+        {% for category in categories %}
+        <div class="card category-card">
+            <i class="fas fa-tags"></i>
+            <h3>{{ category.name }}</h3>
+            <a href="{{ url_for('coupons', category=category.id) }}" class="btn">View Coupons</a>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- How It Works -->
+<section class="how-it-works">
+    <div class="section-title">
+        <h2>How It Works</h2>
+    </div>
+    
+    <div class="grid-container">
+        <div class="card">
+            <i class="fas fa-user-plus fa-3x" style="color: var(--primary-color); margin-bottom: 1rem;"></i>
+            <h3>Create an Account</h3>
+            <p>Sign up for free and join our community of savvy shoppers looking to save money.</p>
+        </div>
+        
+        <div class="card">
+            <i class="fas fa-upload fa-3x" style="color: var(--secondary-color); margin-bottom: 1rem;"></i>
+            <h3>Share Your Coupons</h3>
+            <p>List your unused coupons and help others save while earning community kudos.</p>
+        </div>
+        
+        <div class="card">
+            <i class="fas fa-search fa-3x" style="color: var(--accent-color); margin-bottom: 1rem;"></i>
+            <h3>Find & Redeem</h3>
+            <p>Browse coupons by category, search for specific stores, or filter by discount value.</p>
+        </div>
+        
+        <div class="card">
+            <i class="fas fa-star fa-3x" style="color: var(--primary-color); margin-bottom: 1rem;"></i>
+            <h3>Rate & Review</h3>
+            <p>Share your experience with coupons and help others make informed decisions.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials -->
+<section class="testimonials-section">
+    <div class="section-title">
+        <h2>What Our Users Say</h2>
+    </div>
+    
+    <div class="testimonial-slider">
+        <div class="testimonial">
+            <div class="quote">"I've saved over $500 in the last month using coupons from this site. The futuristic interface makes finding deals so easy!"</div>
+            <div class="author">- Sarah J.</div>
+        </div>
+        <div class="testimonial">
+            <div class="quote">"As a college student, this platform has been a lifesaver for my budget. The community is amazing!"</div>
+            <div class="author">- Mike T.</div>
+        </div>
+        <div class="testimonial">
+            <div class="quote">"I love the sleek, cyberpunk vibe of the site. It makes couponing actually feel cool and modern!"</div>
+            <div class="author">- Alex W.</div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats -->
+<section class="stats-section">
+    <div class="stat-card">
+        <div class="stat-number">10,000+</div>
+        <div class="stat-label">Active Users</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">50,000+</div>
+        <div class="stat-label">Coupons Shared</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">$2M+</div>
+        <div class="stat-label">Total Savings</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">500+</div>
+        <div class="stat-label">Supported Stores</div>
+    </div>
+</section>
+
+<!-- Newsletter -->
+<section class="newsletter-section">
+    <div class="section-title">
+        <h2>Stay Updated</h2>
+        <p>Subscribe to our newsletter for the latest deals and platform updates</p>
+    </div>
+    <form class="newsletter-form">
+        <input type="email" placeholder="Enter your email" required>
+        <button type="submit" class="btn pulse">Subscribe</button>
+    </form>
+</section>
+{% endblock %}

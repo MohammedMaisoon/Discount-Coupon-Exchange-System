@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Edit Coupon</h2>
+    <form method="POST" action="{{ url_for('edit_coupon', coupon_id=coupon.id) }}">
+        <div class="form-group">
+            <label for="title">Title</label>
+            <input type="text" class="form-control" id="title" name="title" value="{{ coupon.title }}" required>
+        </div>
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea class="form-control" id="description" name="description" rows="3" required>{{ coupon.description }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="code">Coupon Code</label>
+            <input type="text" class="form-control" id="code" name="code" value="{{ coupon.code }}" required>
+        </div>
+        <div class="form-group">
+            <label for="discount_value">Discount Value</label>
+            <input type="text" class="form-control" id="discount_value" name="discount_value" value="{{ coupon.discount_value }}" required>
+        </div>
+        <div class="form-group">
+            <label for="store">Store</label>
+            <input type="text" class="form-control" id="store" name="store" value="{{ coupon.store }}" required>
+        </div>
+        <div class="form-group">
+            <label for="category_id">Category</label>
+            <select class="form-control" id="category_id" name="category_id" required>
+                {% for category in categories %}
+                <option value="{{ category.id }}" {% if category.id == coupon.category_id %}selected{% endif %}>{{ category.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="expiry_date">Expiry Date</label>
+            <input type="date" class="form-control" id="expiry_date" name="expiry_date" value="{{ coupon.expiry_date.strftime('%Y-%m-%d') }}" required>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Update Coupon</button>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-3">Cancel</a>
+    </form>
+</div>
+{% endblock %}

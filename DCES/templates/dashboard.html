@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - CouponExchange.AI{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1 class="glow">User Dashboard</h1>
+        <p>Welcome back, {{ user.username }}!</p>
+    </div>
+    
+    <div class="dashboard-stats">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-ticket-alt"></i></div>
+            <div class="stat-value">{{ user_stats.coupons_shared }}</div>
+            <div class="stat-label">Coupons Shared</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-download"></i></div>
+            <div class="stat-value">{{ user_stats.coupons_used }}</div>
+            <div class="stat-label">Coupons Used</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
+            <div class="stat-value">${{ user_stats.total_savings }}</div>
+            <div class="stat-label">Estimated Savings</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-trophy"></i></div>
+            <div class="stat-value">{{ user_stats.rank }}</div>
+            <div class="stat-label">Community Rank</div>
+        </div>
+    </div>
+    
+    <div class="dashboard-actions">
+        <a href="{{ url_for('add_coupon') }}" class="action-card">
+            <i class="fas fa-plus-circle"></i>
+            <h3>Add New Coupon</h3>
+            <p>Share a coupon code with the community</p>
+        </a>
+        
+        <a href="{{ url_for('saved_coupons') }}" class="action-card">
+            <i class="fas fa-bookmark"></i>
+            <h3>Saved Coupons</h3>
+            <p>View your saved coupons for later use</p>
+        </a>
+        
+        <a href="{{ url_for('edit_profile') }}" class="action-card">
+            <i class="fas fa-user-cog"></i>
+            <h3>Edit Profile</h3>
+            <p>Update your account settings</p>
+        </a>
+        
+        <a href="{{ url_for('notifications') }}" class="action-card">
+            <i class="fas fa-bell"></i>
+            <h3>Notifications</h3>
+            <p>You have {{ notification_count }} new notifications</p>
+        </a>
+    </div>
+    
+    <div class="dashboard-sections">
+        <section class="my-coupons">
+            <div class="section-title">
+                <h2>My Shared Coupons</h2>
+                <a href="{{ url_for('my_coupons') }}" class="btn btn-sm">View All</a>
+            </div>
+            
+            <div class="grid-container">
+                {% if user_coupons %}
+                    {% for coupon in user_coupons %}
+                    <div class="card coupon-card">
+                        <div class="discount-badge">{{ coupon.discount_value }}</div>
+                        <div class="store-name">{{ coupon.store }}</div>
+                        <h3 class="coupon-title">{{ coupon.title }}</h3>
+                        <div class="status-badge {{ coupon.status }}">{{ coupon.status.capitalize() }}</div>
+                        <div class="coupon-code" onclick="copyCode(this)">
+                            {{ coupon.code }}
+                            <span><i class="fas fa-copy"></i></span>
+                        </div>
+                        <div class="expiry-date" data-date="{{ coupon.expiry_date }}">
+                            Expires: {{ coupon.expiry_date.strftime('%d %b %Y') }}
+                        </div>
+                        <div class="coupon-stats">
+                            <span><i class="fas fa-eye"></i> {{ coupon.views }}</span>
+                            <span><i class="fas fa-copy"></i> {{ coupon.copies }}</span>
+                            <span><i class="fas fa-thumbs-up"></i> {{ coupon.likes }}</span>
+                        </div>
+                        <div class="card-footer">
+                            <a href="{{ url_for('edit_coupon', coupon_id=coupon.id) }}" class="btn btn-sm">Edit</a>
+                            <a href="{{ url_for('coupon_stats', coupon_id=coupon.id) }}" class="btn btn-sm">Stats</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-ticket-alt"></i>
+                        <p>You haven't shared any coupons yet</p>
+                        <a href="{{ url_for('add_coupon') }}" class="btn">Share Your First Coupon</a>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+        
+        <section class="recent-activity">
+            <div class="section-title">
+                <h2>Recent Activity</h2>
+            </div>
+            
+            <div class="activity-list">
+                {% if user_activity %}
+                    {% for activity in user_activity %}
+                    <div class="activity-item">
+                        <div class="activity-icon 
+                        {% if activity.type == 'coupon_added' %}icon-add
+                        {% elif activity.type == 'coupon_used' %}icon-use
+                        {% elif activity.type == 'coupon_liked' %}icon-like
+                        {% elif activity.type == 'achievement' %}icon-achievement
+                        {% endif %}">
+                            <i class="fas 
+                            {% if activity.type == 'coupon_added' %}fa-plus
+                            {% elif activity.type == 'coupon_used' %}fa-check
+                            {% elif activity.type == 'coupon_liked' %}fa-heart
+                            {% elif activity.type == 'achievement' %}fa-trophy
+                            {% endif %}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <p>{{ activity.description }}</p>
+                            <span class="activity-time">{{ activity.timestamp.strftime('%d %b %Y, %H:%M') }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-history"></i>
+                        <p>No recent activity</p>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

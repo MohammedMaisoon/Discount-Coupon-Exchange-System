@@ -1,0 +1,1211 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - CouponExchange.AI{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h1 class="glow">Admin Dashboard</h1>
+        <div class="system-status">
+            <div class="status-item">
+                <span class="label">System Status:</span>
+                <span class="value online">Online</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Active Users:</span>
+                <span class="value">{{ stats.active_users }}</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Total Coupons:</span>
+                <span class="value">{{ stats.total_coupons }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="admin-dashboard">
+        <div class="dashboard-sidebar">
+            <div class="admin-nav">
+                <button class="admin-nav-btn active" data-panel="overview">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Overview</span>
+                </button>
+                <button class="admin-nav-btn" data-panel="users">
+                    <i class="fas fa-users"></i>
+                    <span>User Management</span>
+                </button>
+                <button class="admin-nav-btn" data-panel="coupons">
+                    <i class="fas fa-ticket-alt"></i>
+                    <span>Coupon Management</span>
+                </button>
+                <button class="admin-nav-btn" data-panel="reports">
+                    <i class="fas fa-flag"></i>
+                    <span>Reports</span>
+                </button>
+                <button class="admin-nav-btn" data-panel="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>System Settings</span>
+                </button>
+            </div>
+            
+            <div class="admin-quick-actions">
+                <h3>Quick Actions</h3>
+                <button class="admin-action-btn" id="exportDataBtn">
+                    <i class="fas fa-file-export"></i>
+                    <span>Export Data</span>
+                </button>
+                <button class="admin-action-btn" id="systemBackupBtn">
+                    <i class="fas fa-database"></i>
+                    <span>System Backup</span>
+                </button>
+                <button class="admin-action-btn danger" id="maintenanceModeBtn">
+                    <i class="fas fa-tools"></i>
+                    <span>Maintenance Mode</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="dashboard-content">
+            <!-- Overview Panel -->
+            <div class="admin-panel active" id="overviewPanel">
+                <div class="panel-header">
+                    <h2>System Overview</h2>
+                    <div class="period-selector">
+                        <button class="period-btn active" data-period="day">Day</button>
+                        <button class="period-btn" data-period="week">Week</button>
+                        <button class="period-btn" data-period="month">Month</button>
+                    </div>
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-icon">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="metric-data">
+                            <h3>New Users</h3>
+                            <div class="metric-value">{{ stats.new_users }}</div>
+                            <div class="metric-trend up">
+                                <i class="fas fa-arrow-up"></i>
+                                <span>{{ stats.user_growth }}%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-icon">
+                            <i class="fas fa-ticket-alt"></i>
+                        </div>
+                        <div class="metric-data">
+                            <h3>New Coupons</h3>
+                            <div class="metric-value">{{ stats.new_coupons }}</div>
+                            <div class="metric-trend down">
+                                <i class="fas fa-arrow-down"></i>
+                                <span>{{ stats.coupon_growth }}%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-icon">
+                            <i class="fas fa-copy"></i>
+                        </div>
+                        <div class="metric-data">
+                            <h3>Coupon Uses</h3>
+                            <div class="metric-value">{{ stats.coupon_uses }}</div>
+                            <div class="metric-trend up">
+                                <i class="fas fa-arrow-up"></i>
+                                <span>{{ stats.usage_growth }}%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-icon">
+                            <i class="fas fa-flag"></i>
+                        </div>
+                        <div class="metric-data">
+                            <h3>Reports</h3>
+                            <div class="metric-value">{{ stats.reports }}</div>
+                            <div class="metric-trend neutral">
+                                <i class="fas fa-minus"></i>
+                                <span>0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="analytics-grid">
+                    <div class="chart-container">
+                        <h3>Activity Overview</h3>
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3>Popular Stores</h3>
+                        <canvas id="storesChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="recent-activity">
+                    <h3>Recent Activity</h3>
+                    <div class="activity-list">
+                        {% if activities %}
+                            {% for activity in activities %}
+                                <div class="activity-item">
+                                    <div class="activity-icon {{ activity.type }}">
+                                        <i class="{{ activity.icon }}"></i>
+                                    </div>
+                                    <div class="activity-details">
+                                        <p>{{ activity.description }}</p>
+                                        <span class="activity-time">{{ activity.time }}</span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-state">
+                                <p>No recent activity available</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User Management Panel -->
+            <div class="admin-panel" id="usersPanel">
+                <div class="panel-header">
+                    <h2>User Management</h2>
+                    <div class="panel-actions">
+                        <div class="search-box">
+                            <input type="text" id="userSearch" placeholder="Search users...">
+                            <button class="search-btn">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        <button class="btn" id="addUserBtn">
+                            <i class="fas fa-user-plus"></i> Add User
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="admin-table users-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Coupons</th>
+                                <th>Status</th>
+                                <th>Last Active</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                                <tr>
+                                    <td>{{ user.id }}</td>
+                                    <td>
+                                        <div class="user-cell">
+                                            <img src="{{ user.avatar or url_for('static', filename='images/default-avatar.png') }}" class="user-avatar-sm">
+                                            <span>{{ user.username }}</span>
+                                        </div>
+                                    </td>
+                                    <td>{{ user.email }}</td>
+                                    <td>{{ user.coupons_count }}</td>
+                                    <td>
+                                        <span class="status-badge {{ user.status }}">{{ user.status }}</span>
+                                    </td>
+                                    <td>{{ user.last_active }}</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="btn-icon view-user" data-id="{{ user.id }}" title="View User">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn-icon edit-user" data-id="{{ user.id }}" title="Edit User">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn-icon delete-user" data-id="{{ user.id }}" title="Delete User">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if user_pages > 1 %}
+                    <div class="pagination">
+                        {% for p in range(1, user_pages + 1) %}
+                            <a href="?user_page={{ p }}" class="page-btn {% if user_page == p %}active{% endif %}">{{ p }}</a>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Coupon Management Panel -->
+            <div class="admin-panel" id="couponsPanel">
+                <div class="panel-header">
+                    <h2>Coupon Management</h2>
+                    <div class="panel-actions">
+                        <div class="search-box">
+                            <input type="text" id="couponSearch" placeholder="Search coupons...">
+                            <button class="search-btn">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        <button class="btn" id="addCouponBtn">
+                            <i class="fas fa-plus"></i> Add Coupon
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="admin-table coupons-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Store</th>
+                                <th>Discount</th>
+                                <th>Code</th>
+                                <th>Status</th>
+                                <th>Expiry</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for coupon in coupons %}
+                                <tr>
+                                    <td>{{ coupon.id }}</td>
+                                    <td>{{ coupon.title }}</td>
+                                    <td>{{ coupon.store }}</td>
+                                    <td>{{ coupon.discount_value }}</td>
+                                    <td>{{ coupon.code }}</td>
+                                    <td>
+                                        <span class="status-badge {{ coupon.status }}">{{ coupon.status }}</span>
+                                    </td>
+                                    <td>{{ coupon.expiry_date.strftime('%d %b %Y') }}</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="btn-icon view-coupon" data-id="{{ coupon.id }}" title="View Coupon">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn-icon edit-coupon" data-id="{{ coupon.id }}" title="Edit Coupon">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn-icon delete-coupon" data-id="{{ coupon.id }}" title="Delete Coupon">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if coupon_pages > 1 %}
+                    <div class="pagination">
+                        {% for p in range(1, coupon_pages + 1) %}
+                            <a href="?coupon_page={{ p }}" class="page-btn {% if coupon_page == p %}active{% endif %}">{{ p }}</a>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Reports Panel -->
+            <div class="admin-panel" id="reportsPanel">
+                <div class="panel-header">
+                    <h2>Reported Content</h2>
+                    <div class="panel-actions">
+                        <div class="filter-dropdown">
+                            <select id="reportStatusFilter">
+                                <option value="all">All Reports</option>
+                                <option value="pending">Pending</option>
+                                <option value="resolved">Resolved</option>
+                                <option value="dismissed">Dismissed</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="admin-table reports-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Type</th>
+                                <th>Content</th>
+                                <th>Reported By</th>
+                                <th>Reason</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for report in reports %}
+                                <tr>
+                                    <td>{{ report.id }}</td>
+                                    <td>{{ report.type }}</td>
+                                    <td>
+                                        <a href="{{ report.content_url }}">View Content</a>
+                                    </td>
+                                    <td>{{ report.reported_by }}</td>
+                                    <td>{{ report.reason }}</td>
+                                    <td>{{ report.created_at.strftime('%d %b %Y') }}</td>
+                                    <td>
+                                        <span class="status-badge {{ report.status }}">{{ report.status }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="btn-icon resolve-report" data-id="{{ report.id }}" title="Resolve">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button class="btn-icon dismiss-report" data-id="{{ report.id }}" title="Dismiss">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            <button class="btn-icon delete-content" data-content-id="{{ report.content_id }}" title="Delete Content">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if report_pages > 1 %}
+                    <div class="pagination">
+                        {% for p in range(1, report_pages + 1) %}
+                            <a href="?report_page={{ p }}" class="page-btn {% if report_page == p %}active{% endif %}">{{ p }}</a>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Settings Panel -->
+            <div class="admin-panel" id="settingsPanel">
+                <div class="panel-header">
+                    <h2>System Settings</h2>
+                    <div class="panel-actions">
+                        <button class="btn" id="saveSettingsBtn">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                    </div>
+                </div>
+                
+                <form id="settingsForm" class="settings-form">
+                    <div class="settings-section">
+                        <h3>General Settings</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Site Title</label>
+                                <input type="text" name="site_title" value="{{ settings.site_title }}">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Site Description</label>
+                                <input type="text" name="site_description" value="{{ settings.site_description }}">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Allow Registration</label>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="allowRegistration" name="allow_registration" {% if settings.allow_registration %}checked{% endif %}>
+                                    <label for="allowRegistration"></label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Email Verification</label>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="emailVerification" name="email_verification" {% if settings.email_verification %}checked{% endif %}>
+                                    <label for="emailVerification"></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>Coupon Settings</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Require Approval</label>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="requireApproval" name="require_approval" {% if settings.require_approval %}checked{% endif %}>
+                                    <label for="requireApproval"></label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Max Coupons Per User</label>
+                                <input type="number" name="max_coupons" value="{{ settings.max_coupons }}">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Max Expiry Period (Days)</label>
+                                <input type="number" name="max_expiry" value="{{ settings.max_expiry }}">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Allow External Links</label>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="allowLinks" name="allow_links" {% if settings.allow_links %}checked{% endif %}>
+                                    <label for="allowLinks"></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>Email Settings</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>SMTP Host</label>
+                                <input type="text" name="smtp_host" value="{{ settings.smtp_host }}">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>SMTP Port</label>
+                                <input type="number" name="smtp_port" value="{{ settings.smtp_port }}">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>SMTP Username</label>
+                                <input type="text" name="smtp_username" value="{{ settings.smtp_username }}">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>SMTP Password</label>
+                                <input type="password" name="smtp_password" value="{{ settings.smtp_password }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>AI Settings</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>AI Verification</label>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="aiVerification" name="ai_verification" {% if settings.ai_verification %}checked{% endif %}>
+                                    <label for="aiVerification"></label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>AI API Key</label>
+                                <input type="password" name="ai_api_key" value="{{ settings.ai_api_key }}">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Auto-Categorization</label>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="autoCategorize" name="auto_categorize" {% if settings.auto_categorize %}checked{% endif %}>
+                                    <label for="autoCategorize"></label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Verification Threshold (%)</label>
+                                <input type="number" name="verification_threshold" value="{{ settings.verification_threshold }}">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Modal -->
+<div class="modal" id="userModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="userModalTitle">User Details</h2>
+            <button class="close-btn" id="closeUserModal">×</button>
+        </div>
+        <div class="modal-body" id="userModalBody">
+            <!-- Content will be loaded dynamically -->
+        </div>
+    </div>
+</div>
+
+<!-- Coupon Modal -->
+<div class="modal" id="couponModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="couponModalTitle">Coupon Details</h2>
+            <button class="close-btn" id="closeCouponModal">×</button>
+        </div>
+        <div class="modal-body" id="couponModalBody">
+            <!-- Content will be loaded dynamically -->
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Panel switching
+        const navBtns = document.querySelectorAll('.admin-nav-btn');
+        const panels = document.querySelectorAll('.admin-panel');
+        
+        navBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const panelId = this.getAttribute('data-panel');
+                
+                // Remove active class from all buttons and panels
+                navBtns.forEach(btn => btn.classList.remove('active'));
+                panels.forEach(panel => panel.classList.remove('active'));
+                
+                // Add active class to clicked button and corresponding panel
+                this.classList.add('active');
+                document.getElementById(panelId + 'Panel').classList.add('active');
+            });
+        });
+        
+        // Charts initialization
+        if (document.getElementById('activityChart')) {
+            const activityCtx = document.getElementById('activityChart').getContext('2d');
+            const activityChart = new Chart(activityCtx, {
+                type: 'line',
+                data: {
+                    labels: {{ activity_labels|safe }},
+                    datasets: [
+                        {
+                            label: 'Users',
+                            data: {{ user_activity|safe }},
+                            borderColor: '#29B6F6',
+                            backgroundColor: 'rgba(41, 182, 246, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Coupons',
+                            data: {{ coupon_activity|safe }},
+                            borderColor: '#66BB6A',
+                            backgroundColor: 'rgba(102, 187, 106, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                color: '#ccc'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#ccc'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#ccc'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        if (document.getElementById('storesChart')) {
+            const storesCtx = document.getElementById('storesChart').getContext('2d');
+            const storesChart = new Chart(storesCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: {{ store_labels|safe }},
+                    datasets: [{
+                        data: {{ store_data|safe }},
+                        backgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+                            '#FF9F40', '#66BB6A', '#BA68C8', '#78909C', '#FFD54F'
+                        ],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#ccc'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Period selector
+        const periodBtns = document.querySelectorAll('.period-btn');
+        if (periodBtns.length > 0) {
+            periodBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const period = this.getAttribute('data-period');
+                    
+                    // Remove active class from all period buttons
+                    periodBtns.forEach(btn => btn.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    // AJAX request to update charts
+                    fetch(`/api/admin/stats?period=${period}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            // Update metrics
+                            document.querySelector('.metric-card:nth-child(1) .metric-value').textContent = data.new_users;
+                            document.querySelector('.metric-card:nth-child(2) .metric-value').textContent = data.new_coupons;
+                            document.querySelector('.metric-card:nth-child(3) .metric-value').textContent = data.coupon_uses;
+                            document.querySelector('.metric-card:nth-child(4) .metric-value').textContent = data.reports;
+                            
+                            // Update charts
+                            activityChart.data.labels = data.activity_labels;
+                            activityChart.data.datasets[0].data = data.user_activity;
+                            activityChart.data.datasets[1].data = data.coupon_activity;
+                            activityChart.update();
+                            
+                            storesChart.data.labels = data.store_labels;
+                            storesChart.data.datasets[0].data = data.store_data;
+                            storesChart.update();
+                        });
+                });
+            });
+        }
+        
+        // Modal handling
+        const userModal = document.getElementById('userModal');
+        const couponModal = document.getElementById('couponModal');
+        const closeUserModal = document.getElementById('closeUserModal');
+        const closeCouponModal = document.getElementById('closeCouponModal');
+        
+        // User modal
+        const viewUserBtns = document.querySelectorAll('.view-user');
+        if (viewUserBtns.length > 0) {
+            viewUserBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const userId = this.getAttribute('data-id');
+                    
+                    fetch(`/api/admin/user/${userId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            document.getElementById('userModalTitle').textContent = `User: ${data.username}`;
+                            document.getElementById('userModalBody').innerHTML = `
+                                <div class="modal-user-details">
+                                    <div class="user-avatar-lg">
+                                        <img src="${data.avatar || '/static/images/default-avatar.png'}" alt="${data.username}">
+                                    </div>
+                                    <div class="user-info-grid">
+                                        <div class="info-item">
+                                            <span class="label">Username:</span>
+                                            <span class="value">${data.username}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="label">Email:</span>
+                                            <span class="value">${data.email}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="label">Member Since:</span>
+                                            <span class="value">${data.created_at}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="label">Status:</span>
+                                            <span class="value status-badge ${data.status}">${data.status}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="label">Last Active:</span>
+                                            <span class="value">${data.last_active}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="label">Rank:</span>
+                                            <span class="value">${data.rank_title}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="label">Coupons:</span>
+                                            <span class="value">${data.coupons_count}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="label">Reviews:</span>
+                                            <span class="value">${data.reviews_count}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="user-actions">
+                                    <button class="btn edit-user-modal" data-id="${data.id}">
+                                        <i class="fas fa-edit"></i> Edit User
+                                    </button>
+                                    <button class="btn danger delete-user-modal" data-id="${data.id}">
+                                        <i class="fas fa-trash"></i> Delete User
+                                    </button>
+                                    <button class="btn ${data.status === 'active' ? 'warning' : 'success'}" id="toggleUserStatus" data-id="${data.id}" data-status="${data.status}">
+                                        <i class="fas ${data.status === 'active' ? 'fa-ban' : 'fa-check'}"></i> 
+                                        ${data.status === 'active' ? 'Suspend User' : 'Activate User'}
+                                    </button>
+                                </div>
+                                <div class="tabs">
+                                    <div class="tab-header">
+                                        <button class="tab-btn active" data-tab="user-coupons">Coupons</button>
+                                        <button class="tab-btn" data-tab="user-activity">Activity</button>
+                                        <button class="tab-btn" data-tab="user-reports">Reports</button>
+                                    </div>
+                                    <div class="tab-content">
+                                        <div class="tab-pane active" id="user-coupons">
+                                            ${data.coupons.length ? `
+                                            <table class="modal-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Title</th>
+                                                        <th>Store</th>
+                                                        <th>Status</th>
+                                                        <th>Expiry</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${data.coupons.map(coupon => `
+                                                    <tr>
+                                                        <td>${coupon.title}</td>
+                                                        <td>${coupon.store}</td>
+                                                        <td><span class="status-badge ${coupon.status}">${coupon.status}</span></td>
+                                                        <td>${coupon.expiry_date}</td>
+                                                    </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                            ` : '<div class="empty-state"><p>No coupons found</p></div>'}
+                                        </div>
+                                        <div class="tab-pane" id="user-activity">
+                                            ${data.activities.length ? `
+                                            <div class="activity-timeline">
+                                                ${data.activities.map(activity => `
+                                                <div class="timeline-item">
+                                                    <div class="timeline-icon ${activity.type}">
+                                                        <i class="${activity.icon}"></i>
+                                                    </div>
+                                                    <div class="timeline-content">
+                                                        <p>${activity.description}</p>
+                                                        <span class="timeline-time">${activity.time}</span>
+                                                    </div>
+                                                </div>
+                                                `).join('')}
+                                            </div>
+                                            ` : '<div class="empty-state"><p>No activity found</p></div>'}
+                                        </div>
+                                        <div class="tab-pane" id="user-reports">
+                                            ${data.reports.length ? `
+                                            <table class="modal-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Type</th>
+                                                        <th>Reason</th>
+                                                        <th>Date</th>
+                                                        <th>Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${data.reports.map(report => `
+                                                    <tr>
+                                                        <td>${report.type}</td>
+                                                        <td>${report.reason}</td>
+                                                        <td>${report.created_at}</td>
+                                                        <td><span class="status-badge ${report.status}">${report.status}</span></td>
+                                                    </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                            ` : '<div class="empty-state"><p>No reports found</p></div>'}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            userModal.classList.add('active');
+                        });
+                });
+            });
+        }
+        
+        // Coupon modal
+        const viewCouponBtns = document.querySelectorAll('.view-coupon');
+        if (viewCouponBtns.length > 0) {
+            viewCouponBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const couponId = this.getAttribute('data-id');
+                    
+                    fetch(`/api/admin/coupon/${couponId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            document.getElementById('couponModalTitle').textContent = `Coupon: ${data.title}`;
+                            document.getElementById('couponModalBody').innerHTML = `
+                                <div class="modal-coupon-details">
+                                    <div class="coupon-store-logo">
+                                        <img src="${data.store_logo || '/static/images/default-store.png'}" alt="${data.store}">
+                                    </div>
+                                    <div class="coupon-info-grid">
+                                        <div class="info-item">
+                                            <span class="label">Title:</span>
+                                            <span class="value">${data.title}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="label">Store:</span>
+                                            <span class="value">${data.store}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="label">Code:</span>
+                                            <span class="value code">${data.code}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="label">Discount:</span>
+                                            <span class="value">${data.discount_value}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="label">Status:</span>
+                                            <span class="value status-badge ${data.status}">${data.status}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="label">Created:</span>
+                                            <span class="value">${data.created_at}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="label">Expires:</span>
+                                            <span class="value">${data.expiry_date}</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="label">Added By:</span>
+                                            <span class="value">${data.added_by}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="coupon-description">
+                                    <h3>Description</h3>
+                                    <p>${data.description}</p>
+                                </div>
+                                <div class="coupon-actions">
+                                    <button class="btn edit-coupon-modal" data-id="${data.id}">
+                                        <i class="fas fa-edit"></i> Edit Coupon
+                                    </button>
+                                    <button class="btn danger delete-coupon-modal" data-id="${data.id}">
+                                        <i class="fas fa-trash"></i> Delete Coupon
+                                    </button>
+                                    <button class="btn ${data.status === 'active' ? 'warning' : 'success'}" id="toggleCouponStatus" data-id="${data.id}" data-status="${data.status}">
+                                        <i class="fas ${data.status === 'active' ? 'fa-ban' : 'fa-check'}"></i> 
+                                        ${data.status === 'active' ? 'Deactivate' : 'Activate'}
+                                    </button>
+                                </div>
+                                <div class="tabs">
+                                    <div class="tab-header">
+                                        <button class="tab-btn active" data-tab="coupon-stats">Statistics</button>
+                                        <button class="tab-btn" data-tab="coupon-reviews">Reviews</button>
+                                        <button class="tab-btn" data-tab="coupon-reports">Reports</button>
+                                    </div>
+                                    <div class="tab-content">
+                                        <div class="tab-pane active" id="coupon-stats">
+                                            <div class="stats-grid">
+                                                <div class="stat-card">
+                                                    <div class="stat-value">${data.stats.views}</div>
+                                                    <div class="stat-label">Views</div>
+                                                </div>
+                                                <div class="stat-card">
+                                                    <div class="stat-value">${data.stats.copies}</div>
+                                                    <div class="stat-label">Copies</div>
+                                                </div>
+                                                <div class="stat-card">
+                                                    <div class="stat-value">${data.stats.saves}</div>
+                                                    <div class="stat-label">Saves</div>
+                                                </div>
+                                                <div class="stat-card">
+                                                    <div class="stat-value">${data.stats.conversion_rate}%</div>
+                                                    <div class="stat-label">Conversion</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="tab-pane" id="coupon-reviews">
+                                            ${data.reviews.length ? `
+                                            <div class="review-list">
+                                                ${data.reviews.map(review => `
+                                                <div class="review-item">
+                                                    <div class="review-header">
+                                                        <div class="review-user">
+                                                            <img src="${review.user_avatar || '/static/images/default-avatar.png'}" class="user-avatar-sm">
+                                                            <span>${review.username}</span>
+                                                        </div>
+                                                        <div class="review-rating">
+                                                            ${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}
+                                                        </div>
+                                                    </div>
+                                                    <div class="review-content">
+                                                        <p>${review.comment}</p>
+                                                    </div>
+                                                    <div class="review-footer">
+                                                        <span class="review-date">${review.created_at}</span>
+                                                        <button class="btn-icon delete-review" data-id="${review.id}">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                `).join('')}
+                                            </div>
+                                            ` : '<div class="empty-state"><p>No reviews found</p></div>'}
+                                        </div>
+                                        <div class="tab-pane" id="coupon-reports">
+                                            ${data.reports.length ? `
+                                            <table class="modal-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Reported By</th>
+                                                        <th>Reason</th>
+                                                        <th>Date</th>
+                                                        <th>Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${data.reports.map(report => `
+                                                    <tr>
+                                                        <td>${report.reported_by}</td>
+                                                        <td>${report.reason}</td>
+                                                        <td>${report.created_at}</td>
+                                                        <td><span class="status-badge ${report.status}">${report.status}</span></td>
+                                                    </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                            ` : '<div class="empty-state"><p>No reports found</p></div>'}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            couponModal.classList.add('active');
+                        });
+                });
+            });
+        }
+        
+        // Close modals
+        if (closeUserModal) {
+            closeUserModal.addEventListener('click', function() {
+                userModal.classList.remove('active');
+            });
+        }
+        
+        if (closeCouponModal) {
+            closeCouponModal.addEventListener('click', function() {
+                couponModal.classList.remove('active');
+            });
+        }
+        
+        // Tab functionality
+        document.addEventListener('click', function(e) {
+            if (e.target && e.target.classList.contains('tab-btn')) {
+                const tabId = e.target.getAttribute('data-tab');
+                const tabContainer = e.target.closest('.tabs');
+                
+                tabContainer.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                tabContainer.querySelectorAll('.tab-pane').forEach(pane => {
+                    pane.classList.remove('active');
+                });
+                
+                e.target.classList.add('active');
+                tabContainer.querySelector(`#${tabId}`).classList.add('active');
+            }
+        });
+        
+        // Settings form submit
+        const settingsForm = document.getElementById('settingsForm');
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        
+        if (settingsForm && saveSettingsBtn) {
+            saveSettingsBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const formData = new FormData(settingsForm);
+                const settings = {};
+                
+                for (const [key, value] of formData.entries()) {
+                    if (key.startsWith('allow_') || key.startsWith('require_') || key.startsWith('email_') || key.startsWith('ai_') || key.startsWith('auto_')) {
+                        settings[key] = value === 'on';
+                    } else {
+                        settings[key] = value;
+                    }
+                }
+                
+                fetch('/api/admin/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                       // Show success notification
+                       const notification = document.createElement('div');
+                       notification.classList.add('notification', 'success');
+                       notification.innerHTML = `
+                           <i class="fas fa-check-circle"></i>
+                           <span>Settings saved successfully!</span>
+                       `;
+                       document.body.appendChild(notification);
+                       
+                       // Remove notification after 3 seconds
+                       setTimeout(() => {
+                           notification.remove();
+                       }, 3000);
+                   } else {
+                       // Show error notification
+                       const notification = document.createElement('div');
+                       notification.classList.add('notification', 'error');
+                       notification.innerHTML = `
+                           <i class="fas fa-exclamation-circle"></i>
+                           <span>Error: ${data.message}</span>
+                       `;
+                       document.body.appendChild(notification);
+                       
+                       // Remove notification after 3 seconds
+                       setTimeout(() => {
+                           notification.remove();
+                       }, 3000);
+                   }
+               });
+           });
+       }
+       
+       // Quick action buttons
+       const exportDataBtn = document.getElementById('exportDataBtn');
+       const systemBackupBtn = document.getElementById('systemBackupBtn');
+       const maintenanceModeBtn = document.getElementById('maintenanceModeBtn');
+       
+       if (exportDataBtn) {
+           exportDataBtn.addEventListener('click', function() {
+               fetch('/api/admin/export')
+                   .then(response => response.blob())
+                   .then(blob => {
+                       const url = window.URL.createObjectURL(blob);
+                       const a = document.createElement('a');
+                       a.style.display = 'none';
+                       a.href = url;
+                       a.download = 'couponexchange_export_' + new Date().toISOString().split('T')[0] + '.zip';
+                       document.body.appendChild(a);
+                       a.click();
+                       window.URL.revokeObjectURL(url);
+                   });
+           });
+       }
+       
+       if (systemBackupBtn) {
+           systemBackupBtn.addEventListener('click', function() {
+               // Show loading notification
+               const notification = document.createElement('div');
+               notification.classList.add('notification', 'loading');
+               notification.innerHTML = `
+                   <i class="fas fa-spinner fa-spin"></i>
+                   <span>Creating system backup...</span>
+               `;
+               document.body.appendChild(notification);
+               
+               fetch('/api/admin/backup', {
+                   method: 'POST'
+               })
+               .then(response => response.json())
+               .then(data => {
+                   // Remove loading notification
+                   notification.remove();
+                   
+                   if (data.success) {
+                       // Show success notification
+                       const successNotification = document.createElement('div');
+                       successNotification.classList.add('notification', 'success');
+                       successNotification.innerHTML = `
+                           <i class="fas fa-check-circle"></i>
+                           <span>Backup created successfully!</span>
+                       `;
+                       document.body.appendChild(successNotification);
+                       
+                       // Remove notification after 3 seconds
+                       setTimeout(() => {
+                           successNotification.remove();
+                       }, 3000);
+                   } else {
+                       // Show error notification
+                       const errorNotification = document.createElement('div');
+                       errorNotification.classList.add('notification', 'error');
+                       errorNotification.innerHTML = `
+                           <i class="fas fa-exclamation-circle"></i>
+                           <span>Error: ${data.message}</span>
+                       `;
+                       document.body.appendChild(errorNotification);
+                       
+                       // Remove notification after 3 seconds
+                       setTimeout(() => {
+                           errorNotification.remove();
+                       }, 3000);
+                   }
+               });
+           });
+       }
+       
+       if (maintenanceModeBtn) {
+           maintenanceModeBtn.addEventListener('click', function() {
+               const isInMaintenance = this.classList.contains('active');
+               
+               fetch('/api/admin/maintenance', {
+                   method: 'POST',
+                   headers: {
+                       'Content-Type': 'application/json'
+                   },
+                   body: JSON.stringify({
+                       maintenance_mode: !isInMaintenance
+                   })
+               })
+               .then(response => response.json())
+               .then(data => {
+                   if (data.success) {
+                       if (!isInMaintenance) {
+                           this.classList.add('active');
+                           this.querySelector('span').textContent = 'Exit Maintenance';
+                       } else {
+                           this.classList.remove('active');
+                           this.querySelector('span').textContent = 'Maintenance Mode';
+                       }
+                       
+                       // Show success notification
+                       const notification = document.createElement('div');
+                       notification.classList.add('notification', 'success');
+                       notification.innerHTML = `
+                           <i class="fas fa-check-circle"></i>
+                           <span>Maintenance mode ${!isInMaintenance ? 'activated' : 'deactivated'} successfully!</span>
+                       `;
+                       document.body.appendChild(notification);
+                       
+                       // Remove notification after 3 seconds
+                       setTimeout(() => {
+                           notification.remove();
+                       }, 3000);
+                   }
+               });
+           });
+       }
+   });
+</script>
+{% endblock %}

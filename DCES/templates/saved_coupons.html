@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>My Saved Coupons</h2>
+    
+    {% if saved_coupons %}
+    <div class="row">
+        {% for coupon in saved_coupons %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ coupon.title }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">{{ coupon.store }}</h6>
+                    <p class="card-text">{{ coupon.description }}</p>
+                    <div class="d-flex justify-content-between">
+                        <span class="badge {% if now > coupon.expiry_date %}bg-danger{% else %}bg-success{% endif %}">
+                            {% if now > coupon.expiry_date %}Expired{% else %}Active{% endif %}
+                        </span>
+                        <span>Expires: {{ coupon.expiry_date.strftime('%d/%m/%Y') }}</span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('coupon_detail', coupon_id=coupon.id) }}" class="btn btn-sm btn-primary">View Details</a>
+                    <a href="{{ url_for('unsave_coupon', coupon_id=coupon.id) }}" class="btn btn-sm btn-danger">Remove</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        You haven't saved any coupons yet. Browse our <a href="{{ url_for('coupons') }}">available coupons</a> to get started!
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

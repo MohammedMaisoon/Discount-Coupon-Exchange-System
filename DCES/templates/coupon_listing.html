@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+
+{% block title %}Browse Coupons - CouponExchange.AI{% endblock %}
+
+{% block content %}
+<div class="listing-container">
+    <div class="listing-header">
+        <h1 class="glow">Browse Coupons</h1>
+        {% if search_query %}
+            <p>Search results for: "{{ search_query }}"</p>
+        {% elif category %}
+            <p>Browsing category: {{ category.name }}</p>
+        {% else %}
+            <p>Discover and filter discount coupons from various stores</p>
+        {% endif %}
+    </div>
+    
+    <div class="listing-tools">
+        <div class="search-filters">
+            <form action="{{ url_for('coupons') }}" method="get" class="search-bar">
+                <input type="text" name="query" id="searchInput" placeholder="Search coupons..." value="{{ search_query if search_query }}">
+                <select name="category" id="categoryFilter">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if category and category.id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit"><i class="fas fa-search"></i> Search</button>
+            </form>
+            
+            <div class="filter-options">
+                <div class="filter-group">
+                    <label for="sortFilter">Sort By:</label>
+                    <select id="sortFilter" onchange="applySorting()">
+                        <option value="newest">Newest</option>
+                        <option value="popular">Most Popular</option>
+                        <option value="expiring">Expiring Soon</option>
+                        <option value="value">Highest Value</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="storeFilter">Store:</label>
+                    <select id="storeFilter" onchange="applyFilters()">
+                        <option value="">All Stores</option>
+                        {% for store in stores %}
+                        <option value="{{ store }}">{{ store }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label for="discountFilter">Min. Discount:</label>
+                    <select id="discountFilter" onchange="applyFilters()">
+                        <option value="">Any</option>
+                        <option value="10">10% Off</option>
+                        <option value="20">20% Off</option>
+                        <option value="30">30% Off</option>
+                        <option value="50">50% Off</option>
+                        <option value="70">70% Off</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="view-options">
+            <button id="gridView" class="view-btn active"><i class="fas fa-th"></i></button>
+            <button id="listView" class="view-btn"><i class="fas fa-list"></i></button>
+        </div>
+    </div>
+    
+    <div class="listing-results">
+        <div class="result-count">
+            <p>Showing <span id="visibleCount">{{ coupons|length }}</span> of <span id="totalCount">{{ total_coupons }}</span> coupons</p>
+        </div>
+        
+        <div id="couponsContainer" class="grid-container">
+            {% if coupons %}
+                {% for coupon in coupons %}
+                <div class="card coupon-card" data-category="{{ coupon.category_id }}" data-store="{{ coupon.store }}" data-date="{{ coupon.created_at }}" data-expiry="{{ coupon.expiry_date }}" data-discount="{{ coupon.discount_value }}">
+                    <div class="discount-badge">{{ coupon.discount_value }}</div>
+                    <div class="store-name">{{ coupon.store }}</div>
+                    <h3 class="coupon-title">{{ coupon.title }}</h3>
+                    <p class="coupon-description">{{ coupon.description }}</p>
+                    <div class="coupon-code" onclick="copyCode(this)">
+                        {{ coupon.code }}
+                        <span><i class="fas fa-copy"></i></span>
+                    </div>
+                    <div class="expiry-date" data-date="{{ coupon.expiry_date }}">
+                        Expires: {{ coupon.expiry_date.strftime('%d %b %Y') }}
+                    </div>
+                    <div class="coupon-stats">
+                        <span><i class="fas fa-eye"></i> {{ coupon.views }}</span>
+                        <span><i class="fas fa-copy"></i> {{ coupon.copies }}</span>
+                        <span><i class="fas fa-thumbs-up"></i> {{ coupon.likes }}</span>
+                    </div>
+                    <div class="card-footer">
+                        <a href="{{ url_for('coupon_detail', coupon_id=coupon.id) }}" class="btn">View Details</a>
+                        <button class="btn-icon save-coupon {% if coupon.id in saved_coupons %}saved{% endif %}" data-id="{{ coupon.id }}">
+                            <i class="{% if coupon.id in saved_coupons %}fas{% else %}far{% endif %} fa-bookmark"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-search"></i>
+                    <p>No coupons found matching your criteria</p>
+                    <a href="{{ url_for('coupons') }}" class="btn">Clear Filters</a>
+                </div>
+            {% endif %}
+        </div>
+        
+        {% if total_pages > 1 %}
+        <div class="pagination">
+            {% if page > 1 %}
+                <a href="{{ url_for('coupons', page=page-1, query=search_query, category=category.id if category) }}" class="page-btn"><i class="fas fa-chevron-left"></i></a>
+            {% endif %}
+            
+            {% for p in range(1, total_pages + 1) %}
+                {% if p == page %}
+                    <span class="page-btn active">{{ p }}</span>
+                {% elif p <= 3 or p >= total_pages - 2 or (p >= page - 1 and p <= page + 1) %}
+                    <a href="{{ url_for('coupons', page=p, query=search_query, category=category.id if category) }}" class="page-btn">{{ p }}</a>
+                {% elif p == 4 and page > 4 %}
+                    <span class="page-dots">...</span>
+                {% elif p == total_pages - 3 and page < total_pages - 3 %}
+                    <span class="page-dots">...</span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if page < total_pages %}
+                <a href="{{ url_for('coupons', page=page+1, query=search_query, category=category.id if category) }}" class="page-btn"><i class="fas fa-chevron-right"></i></a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // View switching
+        document.getElementById('gridView').addEventListener('click', function() {
+            document.getElementById('couponsContainer').className = 'grid-container';
+            document.getElementById('gridView').classList.add('active');
+            document.getElementById('listView').classList.remove('active');
+        });
+        
+        document.getElementById('listView').addEventListener('click', function() {
+            document.getElementById('couponsContainer').className = 'list-container';
+            document.getElementById('listView').classList.add('active');
+            document.getElementById('gridView').classList.remove('active');
+        });
+        
+        // Save coupon functionality
+        document.querySelectorAll('.save-coupon').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const couponId = this.getAttribute('data-id');
+                saveCoupon(couponId, this);
+            });
+        });
+    });
+    
+    function applySorting() {
+        const sortBy = document.getElementById('sortFilter').value;
+        const container = document.getElementById('couponsContainer');
+        const coupons = Array.from(container.querySelectorAll('.coupon-card'));
+        
+        coupons.sort(function(a, b) {
+            switch(sortBy) {
+                case 'newest':
+                    return new Date(b.getAttribute('data-date')) - new Date(a.getAttribute('data-date'));
+                case 'popular':
+                    return parseInt(b.querySelector('.fa-thumbs-up').parentNode.textContent) - 
+                           parseInt(a.querySelector('.fa-thumbs-up').parentNode.textContent);
+                case 'expiring':
+                    return new Date(a.getAttribute('data-expiry')) - new Date(b.getAttribute('data-expiry'));
+                case 'value':
+                    return parseFloat(b.getAttribute('data-discount')) - parseFloat(a.getAttribute('data-discount'));
+            }
+        });
+        
+        coupons.forEach(function(coupon) {
+            container.appendChild(coupon);
+        });
+    }
+    
+    function applyFilters() {
+        const store = document.getElementById('storeFilter').value;
+        const discount = document.getElementById('discountFilter').value;
+        const coupons = document.querySelectorAll('.coupon-card');
+        let visibleCount = 0;
+        
+        coupons.forEach(function(coupon) {
+            let storeMatch = true;
+            let discountMatch = true;
+            
+            if (store && coupon.getAttribute('data-store') !== store) {
+                storeMatch = false;
+            }
+            
+            if (discount && parseFloat(coupon.getAttribute('data-discount')) < parseFloat(discount)) {
+                discountMatch = false;
+            }
+            
+            if (storeMatch && discountMatch) {
+                coupon.style.display = '';
+                visibleCount++;
+            } else {
+                coupon.style.display = 'none';
+            }
+        });
+        
+        document.getElementById('visibleCount').textContent = visibleCount;
+    }
+    
+    function saveCoupon(couponId, button) {
+        fetch('/save_coupon/' + couponId, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                button.classList.toggle('saved');
+                const icon = button.querySelector('i');
+                if (button.classList.contains('saved')) {
+                    icon.className = 'fas fa-bookmark';
+                } else {
+                    icon.className = 'far fa-bookmark';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+    
+    function copyCode(element) {
+        const code = element.textContent.trim();
+        navigator.clipboard.writeText(code).then(function() {
+            // Show copied tooltip
+            const tooltip = document.createElement('div');
+            tooltip.className = 'copy-tooltip';
+            tooltip.textContent = 'Copied!';
+            element.appendChild(tooltip);
+            
+            // Update copy count on server
+            const couponCard = element.closest('.coupon-card');
+            const couponId = couponCard.querySelector('.card-footer .btn').href.split('/').pop();
+            
+            fetch('/increment_copy/' + couponId, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            // Remove tooltip after animation
+            setTimeout(function() {
+                tooltip.remove();
+            }, 2000);
+        });
+    }
+</script>
+{% endblock %}

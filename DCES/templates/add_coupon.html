@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Coupon - CouponExchange.AI{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Add New Coupon</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <form method="POST" action="{{ url_for('add_coupon') }}" class="coupon-form">
+        <div class="form-group">
+            <label for="title">Coupon Title</label>
+            <input type="text" id="title" name="title" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" class="form-control" rows="3" required></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="code">Coupon Code</label>
+            <input type="text" id="code" name="code" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="discount_value">Discount Value</label>
+            <input type="text" id="discount_value" name="discount_value" class="form-control" placeholder="e.g. 20% OFF, $10 OFF" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="store">Store Name</label>
+            <input type="text" id="store" name="store" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="category_id">Category</label>
+            <select id="category_id" name="category_id" class="form-control" required>
+                <option value="">Select Category</option>
+                {% for category in categories %}
+                    <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="expiry_date">Expiry Date</label>
+            <input type="date" id="expiry_date" name="expiry_date" class="form-control" required>
+        </div>
+        
+        <div class="form-buttons">
+            <button type="submit" class="btn">Add Coupon</button>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

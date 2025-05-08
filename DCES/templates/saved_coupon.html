@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}Saved Coupons - CouponExchange.AI{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1 class="glow">My Saved Coupons</h1>
+        <p>Coupons you've saved for later use</p>
+    </div>
+    
+    <div class="grid-container">
+        {% if saved_coupons %}
+            {% for coupon in saved_coupons %}
+            <div class="card coupon-card">
+                <div class="discount-badge">{{ coupon.discount_value }}</div>
+                <div class="store-name">{{ coupon.store }}</div>
+                <h3 class="coupon-title">{{ coupon.title }}</h3>
+                <div class="status-badge {{ 'active' if coupon.expiry_date >= now else 'expired' }}">
+                    {{ 'Active' if coupon.expiry_date >= now else 'Expired' }}
+                </div>
+                <div class="coupon-code" onclick="copyCode(this)">
+                    {{ coupon.code }}
+                    <span><i class="fas fa-copy"></i></span>
+                </div>
+                <div class="expiry-date" data-date="{{ coupon.expiry_date }}">
+                    Expires: {{ coupon.expiry_date.strftime('%d %b %Y') }}
+                </div>
+                <div class="coupon-stats">
+                    <span><i class="fas fa-eye"></i> {{ coupon.views }}</span>
+                    <span><i class="fas fa-copy"></i> {{ coupon.copies }}</span>
+                    <span><i class="fas fa-thumbs-up"></i> {{ coupon.likes }}</span>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('coupon_detail', coupon_id=coupon.id) }}" class="btn btn-sm">View Details</a>
+                    <a href="#" onclick="removeSavedCoupon({{ coupon.id }})" class="btn btn-sm btn-danger">Remove</a>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-bookmark"></i>
+                <p>You haven't saved any coupons yet</p>
+                <a href="{{ url_for('coupons') }}" class="btn">Browse Coupons</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // Function to remove a saved coupon
+    function removeSavedCoupon(couponId) {
+        if (confirm('Are you sure you want to remove this coupon from your saved list?')) {
+            // You would typically make an AJAX request here to remove the coupon
+            // For now, just redirect to a future endpoint
+            window.location.href = "{{ url_for('saved_coupons') }}";
+        }
+    }
+    
+    // Function to copy coupon code
+    function copyCode(element) {
+        var code = element.innerText.trim();
+        navigator.clipboard.writeText(code);
+        
+        // Show a tooltip or notification
+        alert('Coupon code copied to clipboard: ' + code);
+    }
+</script>
+{% endblock %}

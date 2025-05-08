@@ -1,0 +1,506 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ coupon.title }} - CouponExchange.AI{% endblock %}
+
+{% block content %}
+<div class="detail-container">
+    <div class="detail-breadcrumb">
+        <a href="{{ url_for('index') }}">Home</a> &gt;
+        <a href="{{ url_for('coupons') }}">Coupons</a> &gt;
+        <a href="{{ url_for('coupons', category=coupon.category_id) }}">{{ coupon.category.name }}</a> &gt;
+        <span>{{ coupon.title }}</span>
+    </div>
+
+    <div class="detail-content">
+        <div class="coupon-showcase">
+            <div class="coupon-header">
+                <div class="store-badge">
+                    {% if coupon.store_logo %}
+                        <img src="{{ coupon.store_logo }}" alt="{{ coupon.store }}">
+                    {% else %}
+                        <div class="store-initial">{{ coupon.store[0] }}</div>
+                    {% endif %}
+                    <h2>{{ coupon.store }}</h2>
+                </div>
+
+                <div class="coupon-actions">
+                    <button class="btn-icon save-coupon {% if coupon.id in saved_coupons %}saved{% endif %}" data-id="{{ coupon.id }}">
+                        <i class="{% if coupon.id in saved_coupons %}fas{% else %}far{% endif %} fa-bookmark"></i>
+                        <span>Save</span>
+                    </button>
+                    
+                    <button class="btn-icon share-coupon" data-id="{{ coupon.id }}">
+                        <i class="fas fa-share-alt"></i>
+                        <span>Share</span>
+                    </button>
+
+                    <button class="btn-icon like-coupon {% if coupon.id in liked_coupons %}liked{% endif %}" data-id="{{ coupon.id }}">
+                        <i class="{% if coupon.id in liked_coupons %}fas{% else %}far{% endif %} fa-thumbs-up"></i>
+                        <span id="likeCount">{{ coupon.likes }}</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="coupon-card detail">
+                <div class="discount-badge large">{{ coupon.discount_value }}</div>
+                <h1 class="coupon-title">{{ coupon.title }}</h1>
+
+                <div class="coupon-meta">
+                    <div class="meta-item">
+                        <i class="fas fa-tag"></i>
+                        <span>{{ coupon.category.name }}</span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>Added {{ coupon.created_at.strftime('%d %b %Y') }}</span>
+                    </div>
+                    <div class="meta-item expiry {% if coupon.is_expiring %}expiring{% endif %}">
+                        <i class="fas fa-clock"></i>
+                        <span>
+                            {% if coupon.is_expired %}
+                                Expired on {{ coupon.expiry_date.strftime('%d %b %Y') }}
+                            {% elif coupon.is_expiring %}
+                                Expires in {{ coupon.days_left }} days
+                            {% else %}
+                                Expires {{ coupon.expiry_date.strftime('%d %b %Y') }}
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-user"></i>
+                        <span>Shared by <a href="{{ url_for('user_profile', username=coupon.user.username) }}">{{ coupon.user.username }}</a></span>
+                    </div>
+                </div>
+
+                <div class="coupon-description">
+                    <h3>Description</h3>
+                    <p>{{ coupon.description }}</p>
+                </div>
+
+                <div class="coupon-terms">
+                    <h3>Terms & Conditions</h3>
+                    <div class="terms-content">
+                        {% if coupon.terms %}
+                            {{ coupon.terms|safe }}
+                        {% else %}
+                            <ul>
+                                <li>Valid until {{ coupon.expiry_date.strftime('%d %b %Y') }}</li>
+                                <li>Cannot be combined with other offers</li>
+                                <li>Discount applied at checkout</li>
+                                <li>Subject to store terms and conditions</li>
+                            </ul>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="coupon-code-container">
+                    <h3>Coupon Code</h3>
+                    <div class="coupon-code large" onclick="copyCode(this)">
+                        {{ coupon.code }}
+                        <button class="copy-btn">
+                            <i class="fas fa-copy"></i>
+                            <span>Copy Code</span>
+                        </button>
+                    </div>
+
+                    <div class="coupon-use">
+                        <a href="{{ coupon.website }}" target="_blank" class="btn pulse">
+                            <i class="fas fa-external-link-alt"></i>
+                            Visit Store
+                        </a>
+                    </div>
+                </div>
+
+                <div class="coupon-stats">
+                    <div class="stat-item">
+                        <i class="fas fa-eye"></i>
+                        <span>{{ coupon.views }} Views</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-copy"></i>
+                        <span>{{ coupon.copies }} Copies</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-thumbs-up"></i>
+                        <span>{{ coupon.likes }} Likes</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-user-check"></i>
+                        <span>{{ coupon.success_rate }}% Success Rate</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="verification-section">
+                <h3>Coupon Verification</h3>
+                
+                <div class="verification-status">
+                    {% if coupon.verification_status == 'verified' %}
+                        <i class="fas fa-check-circle verified"></i>
+                        <span>Verified by {{ coupon.verified_count }} users</span>
+                    {% else %}
+                        <i class="fas fa-question-circle unverified"></i>
+                        <span>Not verified yet</span>
+                    {% endif %}
+                </div>
+                
+                <div class="verification-actions">
+                    <button class="btn verify-success {% if user_verification == 'success' %}active{% endif %}" data-action="success" data-id="{{ coupon.id }}">
+                        <i class="fas fa-check"></i>
+                        <span>Worked for me</span>
+                    </button>
+                    
+                    <button class="btn verify-fail {% if user_verification == 'fail' %}active{% endif %}" data-action="fail" data-id="{{ coupon.id }}">
+                        <i class="fas fa-times"></i>
+                        <span>Didn't work</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="detail-sidebar">
+            <div class="sidebar-section">
+                <h3>Store Information</h3>
+                <div class="store-info">
+                    <h4>{{ coupon.store }}</h4>
+                    <div class="store-meta">
+                        <p><i class="fas fa-globe"></i> <a href="{{ coupon.website }}" target="_blank">Visit Website</a></p>
+                        {% if coupon.store_info %}
+                            <p><i class="fas fa-info-circle"></i> {{ coupon.store_info }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="store-stats">
+                        <div class="store-stat">
+                            <span class="stat-label">Total Coupons</span>
+                            <span class="stat-value">{{ store_stats.total_coupons }}</span>
+                        </div>
+                        <div class="store-stat">
+                            <span class="stat-label">Success Rate</span>
+                            <span class="stat-value">{{ store_stats.success_rate }}%</span>
+                        </div>
+                    </div>
+                    
+                    <a href="{{ url_for('store_coupons', store=coupon.store) }}" class="btn btn-sm">View All {{ coupon.store }} Coupons</a>
+                </div>
+            </div>
+            
+            <div class="sidebar-section">
+                <h3>Similar Coupons</h3>
+                
+                {% if similar_coupons %}
+                    <div class="similar-coupons">
+                        {% for sim_coupon in similar_coupons %}
+                            <div class="mini-coupon">
+                                <div class="mini-discount">{{ sim_coupon.discount_value }}</div>
+                                <div class="mini-details">
+                                    <h4>{{ sim_coupon.title }}</h4>
+                                    <p>{{ sim_coupon.store }}</p>
+                                </div>
+                                <a href="{{ url_for('coupon_detail', coupon_id=sim_coupon.id) }}" class="stretched-link"></a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state small">
+                        <p>No similar coupons found</p>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="sidebar-section">
+                <h3>Reviews</h3>
+                
+                <div class="review-summary">
+                    <div class="rating-display">
+                        <div class="rating-value">{{ coupon.average_rating|default('0.0') }}</div>
+                        <div class="rating-stars">
+                            {% for i in range(5) %}
+                                {% if i < coupon.average_rating|int %}
+                                    <i class="fas fa-star"></i>
+                                {% elif i == coupon.average_rating|int and coupon.average_rating % 1 > 0 %}
+                                    <i class="fas fa-star-half-alt"></i>
+                                {% else %}
+                                    <i class="far fa-star"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <div class="rating-count">{{ coupon.reviews|length }} reviews</div>
+                    </div>
+                </div>
+                
+                {% if current_user.is_authenticated %}
+                    <div class="review-form">
+                        <h4>Add Your Review</h4>
+                        <form action="{{ url_for('add_review', coupon_id=coupon.id) }}" method="post">
+                            {{ review_form.hidden_tag() }}
+                            
+                            <div class="rating-input">
+                                <div class="rating-label">Your Rating:</div>
+                                <div class="star-rating">
+                                    {% for i in range(1, 6) %}
+                                        <input type="radio" id="rate{{ i }}" name="rating" value="{{ i }}" {% if user_review and user_review.rating == i %}checked{% endif %}>
+                                        <label for="rate{{ i }}"><i class="fas fa-star"></i></label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                {{ review_form.comment(class="form-control", placeholder="Share your experience with this coupon") }}
+                            </div>
+                            
+                            <button type="submit" class="btn">Submit Review</button>
+                        </form>
+                    </div>
+                {% endif %}
+                
+                <div class="reviews-list">
+                    {% if coupon.reviews %}
+                        {% for review in coupon.reviews %}
+                            <div class="review-item">
+                                <div class="review-header">
+                                    <div class="reviewer-info">
+                                        <img src="{{ review.user.avatar or url_for('static', filename='images/default-avatar.png') }}" alt="{{ review.user.username }}" class="avatar-small">
+                                        <span class="reviewer-name">{{ review.user.username }}</span>
+                                    </div>
+                                    <div class="review-rating">
+                                        {% for i in range(5) %}
+                                            <i class="{% if i < review.rating %}fas{% else %}far{% endif %} fa-star"></i>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="review-content">
+                                    <p>{{ review.comment }}</p>
+                                </div>
+                                <div class="review-date">
+                                    {{ review.created_at.strftime('%d %b %Y') }}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state small">
+                            <p>No reviews yet. Be the first to review!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Share Modal -->
+<div id="shareModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Share This Coupon</h3>
+            <span class="modal-close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>Share this awesome coupon with your friends!</p>
+            
+            <div class="share-url">
+                <input type="text" id="shareUrl" value="{{ request.url }}" readonly>
+                <button onclick="copyShareUrl()" class="btn btn-sm"><i class="fas fa-copy"></i> Copy</button>
+            </div>
+            
+            <div class="share-buttons">
+                <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.url|urlencode }}" target="_blank" class="share-btn facebook">
+                    <i class="fab fa-facebook-f"></i>
+                    <span>Facebook</span>
+                </a>
+                <a href="https://twitter.com/intent/tweet?text=Check out this {{ coupon.discount_value }} off at {{ coupon.store }}!&url={{ request.url|urlencode }}" target="_blank" class="share-btn twitter">
+                    <i class="fab fa-twitter"></i>
+                    <span>Twitter</span>
+                </a>
+                <a href="mailto:?subject=Check out this coupon from {{ coupon.store }}&body=I found this great coupon for {{ coupon.discount_value }} off at {{ coupon.store }}. Check it out: {{ request.url }}" class="share-btn email">
+                    <i class="fas fa-envelope"></i>
+                    <span>Email</span>
+                </a>
+                <a href="https://wa.me/?text=Check out this {{ coupon.discount_value }} off at {{ coupon.store }}! {{ request.url }}" target="_blank" class="share-btn whatsapp">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>WhatsApp</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Modal functionality
+        const modal = document.getElementById('shareModal');
+        const shareBtn = document.querySelector('.share-coupon');
+        const closeBtn = document.querySelector('.modal-close');
+        
+        shareBtn.addEventListener('click', function() {
+            modal.style.display = 'block';
+        });
+        
+        closeBtn.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+        
+        window.addEventListener('click', function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        });
+        
+        // Save coupon functionality
+        document.querySelector('.save-coupon').addEventListener('click', function() {
+            const couponId = this.getAttribute('data-id');
+            saveCoupon(couponId, this);
+        });
+        
+        // Like coupon functionality
+        document.querySelector('.like-coupon').addEventListener('click', function() {
+            const couponId = this.getAttribute('data-id');
+            likeCoupon(couponId, this);
+        });
+        
+        // Verification buttons
+        document.querySelectorAll('.verification-actions button').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const action = this.getAttribute('data-action');
+                const couponId = this.getAttribute('data-id');
+                verifyCoupon(couponId, action, this);
+            });
+        });
+    });
+    
+    function copyCode(element) {
+        const code = element.textContent.trim();
+        navigator.clipboard.writeText(code).then(function() {
+            const copyBtn = element.querySelector('.copy-btn');
+            const originalText = copyBtn.querySelector('span').textContent;
+            
+            copyBtn.querySelector('span').textContent = 'Copied!';
+            copyBtn.classList.add('copied');
+            
+            // Update copy count on server
+            const couponId = window.location.pathname.split('/').pop();
+            
+            fetch('/increment_copy/' + couponId, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            // Reset button text after animation
+            setTimeout(function() {
+                copyBtn.querySelector('span').textContent = originalText;
+                copyBtn.classList.remove('copied');
+            }, 2000);
+        });
+    }
+    
+    function copyShareUrl() {
+        const shareUrl = document.getElementById('shareUrl');
+        shareUrl.select();
+        document.execCommand('copy');
+        
+        const copyBtn = shareUrl.nextElementSibling;
+        const originalText = copyBtn.innerHTML;
+        copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+        
+        setTimeout(function() {
+            copyBtn.innerHTML = originalText;
+        }, 2000);
+    }
+    
+    function saveCoupon(couponId, button) {
+        fetch('/save_coupon/' + couponId, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                button.classList.toggle('saved');
+                const icon = button.querySelector('i');
+                if (button.classList.contains('saved')) {
+                    icon.className = 'fas fa-bookmark';
+                } else {
+                    icon.className = 'far fa-bookmark';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+    
+    function likeCoupon(couponId, button) {
+        fetch('/like_coupon/' + couponId, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                button.classList.toggle('liked');
+                const icon = button.querySelector('i');
+                if (button.classList.contains('liked')) {
+                    icon.className = 'fas fa-thumbs-up';
+                } else {
+                    icon.className = 'far fa-thumbs-up';
+                }
+                document.getElementById('likeCount').textContent = data.likes;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+    
+    function verifyCoupon(couponId, action, button) {
+        fetch('/verify_coupon/' + couponId, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ action: action })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reset all verification buttons
+                document.querySelectorAll('.verification-actions button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                // Activate the clicked button
+                button.classList.add('active');
+                
+                // Update verification status
+                const status = document.querySelector('.verification-status');
+                if (data.verified) {
+                    status.innerHTML = `
+                        <i class="fas fa-check-circle verified"></i>
+                        <span>Verified by ${data.verified_count} users</span>
+                    `;
+                } else {
+                    status.innerHTML = `
+                        <i class="fas fa-question-circle unverified"></i>
+                        <span>Not verified yet</span>
+                    `;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+</script>
+{% endblock %}
